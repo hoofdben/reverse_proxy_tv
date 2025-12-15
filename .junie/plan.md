@@ -16,13 +16,13 @@ Assumptions confirmed or set by default (adjustable):
 ---
 
 1. Project scaffolding and repository setup
-   - Initialize Spring Boot project (Java 21, Gradle Kotlin DSL, Spring Web, Spring Security, Spring Data JPA, Validation, Actuator, Flyway, PostgreSQL driver). 
+   - Initialize Spring Boot project (Java 21, Gradle Kotlin DSL, Spring Web, Spring Security, Spring Data JPA, Validation, Actuator, Flyway, PostgreSQL driver).
    - Establish package structure: `nl.mallepetrus.rptv` (Reverse Proxy TV).
    - Add `.editorconfig`, `.gitattributes`, `.gitignore` tuned for Java/Gradle.
    - Configure `build.gradle.kts` with reproducible builds, versioning, and dependency constraints.
 
 2. Security and authentication model
-   - Configure Spring Security with stateless JWT auth, HTTP‑only cookie refresh tokens, CORS rules, and CSRF settings appropriate for API usage. 
+   - Configure Spring Security with stateless JWT auth, HTTP‑only cookie refresh tokens, CORS rules, and CSRF settings appropriate for API usage.
    - Password hashing via Argon2id; minimum password policy and validation.
    - JWT: RS256 keypair loaded from secrets; implement token issuance, rotation, and revocation on logout (optional blacklist in memory for v1; Redis later).
    - Invitation codes: admin‑only endpoints to generate single‑use or limited‑use codes with expiry; validate on registration.
