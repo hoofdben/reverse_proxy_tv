@@ -1,0 +1,5 @@
+# Ignore JetBrains IDE project files
+.idea/
+
+# Ignore Junie planning and metadata folder
+.junie/
