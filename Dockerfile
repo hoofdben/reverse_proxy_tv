@@ -6,9 +6,25 @@ FROM eclipse-temurin:${JAVA_VERSION}-jre AS runtime
 
 WORKDIR /app
 
-# The JAR will be copied in at build time by docker-compose or external build
-COPY build/libs/*.jar app.jar
+# Install tini (proper signal handling) and curl (used by healthchecks)
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tini curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -r -u 10001 appuser
+
+# Copy application JAR and entrypoint
+COPY build/libs/*.jar /app/app.jar
+COPY docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh \
+    && chown -R appuser:appuser /app
 
 EXPOSE 8080
 
-ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/app/app.jar"]
+USER appuser
+
+# Healthcheck will be configured in docker-compose using curl
+
+ENTRYPOINT ["/usr/bin/tini","-g","--","/app/entrypoint.sh"]

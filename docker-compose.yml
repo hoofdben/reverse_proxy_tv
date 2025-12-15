@@ -13,8 +13,27 @@ services:
       - POSTGRES_DB=rptv
       - POSTGRES_USER=rptv
       - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
+      - APP_ENC_MASTER_KEY_FILE=/run/secrets/APP_ENC_MASTER_KEY
+      - JWT_PUBLIC_KEY_PATH=/run/secrets/JWT_PUBLIC_KEY.pem
+      - JWT_PRIVATE_KEY_PATH=/run/secrets/JWT_PRIVATE_KEY.pem
+      - JWT_ISSUER=rptv
+      - JWT_ACCESS_TTL_SECONDS=900
+      - JWT_REFRESH_TTL_SECONDS=2592000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep 'UP' >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
     secrets:
       - POSTGRES_PASSWORD
+      - APP_ENC_MASTER_KEY
+      - JWT_PUBLIC_KEY
+      - JWT_PRIVATE_KEY
     depends_on:
       - postgres
     networks:
@@ -37,6 +56,11 @@ services:
       - POSTGRES_PASSWORD
     volumes:
       - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rptv}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - default
 
@@ -46,6 +70,12 @@ volumes:
 secrets:
   POSTGRES_PASSWORD:
     file: ./secrets/POSTGRES_PASSWORD.txt
+  APP_ENC_MASTER_KEY:
+    file: ./secrets/APP_ENC_MASTER_KEY.txt
+  JWT_PUBLIC_KEY:
+    file: ./secrets/JWT_PUBLIC_KEY.pem
+  JWT_PRIVATE_KEY:
+    file: ./secrets/JWT_PRIVATE_KEY.pem
 
 networks:
   traefik:
