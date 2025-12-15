@@ -1,0 +1,82 @@
+version: "3.9"
+
+services:
+  api:
+    # Replace with your published image, e.g. ghcr.io/your-org/reverse-proxy-tv:latest
+    image: ghcr.io/your-org/reverse-proxy-tv:latest
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=rptv
+      - POSTGRES_USER=rptv
+      - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
+      - APP_ENC_MASTER_KEY_FILE=/run/secrets/APP_ENC_MASTER_KEY
+      - JWT_PUBLIC_KEY_PATH=/run/secrets/JWT_PUBLIC_KEY.pem
+      - JWT_PRIVATE_KEY_PATH=/run/secrets/JWT_PRIVATE_KEY.pem
+      - JWT_ISSUER=rptv
+      - JWT_ACCESS_TTL_SECONDS=900
+      - JWT_REFRESH_TTL_SECONDS=2592000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep 'UP' >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    secrets:
+      - POSTGRES_PASSWORD
+      - APP_ENC_MASTER_KEY
+      - JWT_PUBLIC_KEY
+      - JWT_PRIVATE_KEY
+    depends_on:
+      - postgres
+    networks:
+      - default
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      # Change the host below to your domain
+      - "traefik.http.routers.rptv-api.rule=Host(`api.your-domain.tld`)"
+      - "traefik.http.routers.rptv-api.entrypoints=websecure"
+      - "traefik.http.routers.rptv-api.tls.certresolver=myresolver"
+      - "traefik.http.services.rptv-api.loadbalancer.server.port=8080"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=rptv
+      - POSTGRES_USER=rptv
+      - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
+    secrets:
+      - POSTGRES_PASSWORD
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rptv}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+volumes:
+  pg_data:
+
+secrets:
+  POSTGRES_PASSWORD:
+    file: ./secrets/POSTGRES_PASSWORD.txt
+  APP_ENC_MASTER_KEY:
+    file: ./secrets/APP_ENC_MASTER_KEY.txt
+  JWT_PUBLIC_KEY:
+    file: ./secrets/JWT_PUBLIC_KEY.pem
+  JWT_PRIVATE_KEY:
+    file: ./secrets/JWT_PRIVATE_KEY.pem
+
+networks:
+  traefik:
+    external: true
+    name: traefik_default
